@@ -22,7 +22,7 @@ import {
   IconButton,
   Snackbar,
 } from '@mui/material';
-import CatchingPokemonIcon from '@mui/icons-material/CatchingPokemon';
+import PetsIcon from '@mui/icons-material/Pets';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
@@ -53,14 +53,18 @@ function monoFont() {
 }
 
 function normalizeRows(payload: any): Row[] {
-  // Preferred shape: { pokemons: "[ {id,name,tx}, ... ]" }
   try {
-    let raw: any = (payload as any)?.pokemons;
+    const getFirstField = (obj: any) => {
+      if (!obj || typeof obj !== 'object') return undefined;
+      return (obj as any)?.tuxemons ?? (obj as any)?.tuxemons;
+    };
+
+    let raw: any = getFirstField(payload);
     if (!raw && (payload as any)?.value) {
       const v: any = (payload as any).value;
-      raw = typeof v === 'object' ? v.pokemons : undefined;
+      raw = typeof v === 'object' ? getFirstField(v) : undefined;
       if (!raw && typeof v === 'string') {
-        try { raw = JSON.parse(v).pokemons; } catch {}
+        try { raw = getFirstField(JSON.parse(v)); } catch {}
       }
     }
     if (raw) {
@@ -148,15 +152,15 @@ export default function Page() {
     return () => window.removeEventListener('tracnetwork#initialized', sync);
   }, []);
 
-  const pokedexKey = useMemo(() => {
+  const dexKey = useMemo(() => {
     if (!walletPubKey) return null;
-    return `app/pokedex/${walletPubKey}`;
+    return `app/tuxedex/${walletPubKey}`;
   }, [walletPubKey]);
 
   const query = useMemo(() => {
-    if (!pokedexKey) return null;
-    return new URLSearchParams({ key: pokedexKey }).toString();
-  }, [pokedexKey]);
+    if (!dexKey) return null;
+    return new URLSearchParams({ key: dexKey }).toString();
+  }, [dexKey]);
 
   const fetchState = useCallback(async () => {
     try {
@@ -308,7 +312,7 @@ export default function Page() {
         }),
       });
 
-      setToast('Pokémon caught!');
+      setToast('Tuxemon caught!');
       fetchState();
     } catch (e: any) {
       console.error('Catch failed:', e);
@@ -348,53 +352,46 @@ export default function Page() {
         elevation={0}
         sx={{
           bgcolor: 'transparent',
-          background: 'linear-gradient(90deg, #E53935 0%, #C62828 55%, #B71C1C 100%)',
-          borderBottom: '4px solid #111827',
+          background: 'linear-gradient(90deg, #0F172A 0%, #0B3A54 55%, #0F766E 100%)',
+          borderBottom: '4px solid rgba(15, 23, 42, 0.9)',
         }}
       >
         <Toolbar sx={{ gap: 1.5 }}>
-          {/* Pokéball-ish badge */}
+          {/* Tuxedex badge */}
           <Box
             sx={{
-              width: 34,
-              height: 34,
+              width: 36,
+              height: 36,
               borderRadius: '50%',
-              border: '2px solid #111827',
-              position: 'relative',
+              border: '2px solid rgba(255,255,255,0.35)',
               flexShrink: 0,
-              background:
-                'linear-gradient(180deg, rgba(255,255,255,0.15) 0 10%, transparent 10% 100%), linear-gradient(180deg, #E53935 0 50%, #F9FAFB 50% 100%)',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                top: '50%',
-                height: 3,
-                transform: 'translateY(-50%)',
-                bgcolor: '#111827',
-              },
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                left: '50%',
-                top: '50%',
-                width: 10,
-                height: 10,
-                transform: 'translate(-50%, -50%)',
-                borderRadius: '50%',
-                bgcolor: '#60A5FA',
-                border: '2px solid #111827',
-              },
+              bgcolor: 'rgba(15, 23, 42, 0.55)',
+              display: 'grid',
+              placeItems: 'center',
+              boxShadow: '0 10px 22px rgba(0,0,0,0.28)',
             }}
-          />
+          >
+            <Typography
+              component="span"
+              sx={{
+                fontWeight: 1000,
+                fontSize: 14,
+                lineHeight: 1,
+                letterSpacing: 0.6,
+                color: '#FDE68A',
+                fontFamily: monoFont(),
+              }}
+            >
+              TX
+            </Typography>
+          </Box>
 
           <Box sx={{ flex: 1 }}>
             <Typography variant="h6" component="div" sx={{ fontWeight: 800, letterSpacing: 0.3 }}>
-              Pokédex
+              Tuxedex
             </Typography>
             <Typography variant="caption" sx={{ opacity: 0.9 }}>
-              Catch pokémon • Switch accounts • Watch your collection grow
+              Catch Tuxemon • Switch accounts • Watch your collection grow
             </Typography>
           </Box>
 
@@ -431,7 +428,7 @@ export default function Page() {
           <Box sx={{ mb: 2 }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.25 }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>
-                Trainer Card
+                Tamer Card
               </Typography>
               <Tooltip title="Refresh wallet state">
                 <span>
@@ -608,7 +605,7 @@ export default function Page() {
                   <Typography variant="caption" sx={{ fontWeight: 900, letterSpacing: 0.6, textTransform: 'uppercase', color: 'rgba(17,24,39,0.70)' }}>
                     State Key
                   </Typography>
-                  <Tooltip title={pokedexKey || ''} disableHoverListener={!pokedexKey}>
+                  <Tooltip title={dexKey || ''} disableHoverListener={!dexKey}>
                     <Typography
                       variant="body2"
                       sx={{
@@ -620,16 +617,16 @@ export default function Page() {
                         textOverflow: 'ellipsis',
                       }}
                     >
-                      {pokedexKey ? shortHex(pokedexKey, 18) : '—'}
+                      {dexKey ? shortHex(dexKey, 18) : '—'}
                     </Typography>
                   </Tooltip>
                 </Box>
-                <Tooltip title={pokedexKey ? 'Copy' : 'Connect wallet'}>
+                <Tooltip title={dexKey ? 'Copy' : 'Connect wallet'}>
                   <span>
                     <IconButton
                       size="small"
-                      disabled={!pokedexKey}
-                      onClick={() => pokedexKey && copy('State Key', pokedexKey)}
+                      disabled={!dexKey}
+                      onClick={() => dexKey && copy('State Key', dexKey)}
                       sx={{ border: '1px solid rgba(17,24,39,0.18)', bgcolor: 'rgba(17,24,39,0.04)' }}
                     >
                       <ContentCopyIcon fontSize="small" />
@@ -637,6 +634,7 @@ export default function Page() {
                   </span>
                 </Tooltip>
               </Paper>
+
             </Box>
           </Box>
 
@@ -645,7 +643,7 @@ export default function Page() {
             sx={{
               p: { xs: 2, sm: 2.5 },
               borderRadius: 3,
-              bgcolor: '#E8F5E9',
+              bgcolor: '#ECFEFF',
               borderColor: 'rgba(17,24,39,0.25)',
               mb: 2,
             }}
@@ -654,7 +652,7 @@ export default function Page() {
               <Button
                 variant="contained"
                 color="secondary"
-                startIcon={<CatchingPokemonIcon />}
+                startIcon={<PetsIcon />}
                 onClick={handleCatch}
                 disabled={!walletPubKey || sending}
                 sx={{
@@ -664,7 +662,7 @@ export default function Page() {
                   boxShadow: '0 12px 26px rgba(0,0,0,0.25)',
                 }}
               >
-                {sending ? 'Catching…' : 'Catch Pokémon'}
+                {sending ? 'Catching…' : 'Catch Tuxemon'}
               </Button>
               <Typography variant="body2" sx={{ fontWeight: 700, opacity: 0.9 }}>
                 {walletPubKey ? `Caught: ${rows.length}` : 'Connect your wallet to start catching.'}
@@ -678,44 +676,53 @@ export default function Page() {
           <TableContainer
             component={Paper}
             variant="outlined"
-            sx={{ borderRadius: 3, overflow: 'hidden', borderColor: 'rgba(17,24,39,0.25)' }}
+            sx={{
+              borderRadius: 3,
+              borderColor: 'rgba(17,24,39,0.25)',
+              overflow: 'auto',
+              maxHeight: { xs: 420, sm: 520 },
+            }}
           >
-            <Table aria-label="Pokedex table" sx={{ '& tbody tr:nth-of-type(odd)': { bgcolor: 'rgba(17,24,39,0.03)' } }}>
-              <caption style={{ textAlign: 'left', fontWeight: 800, padding: '12px 16px' }}>Your Pokédex</caption>
-              <TableHead>
-                <TableRow sx={{ bgcolor: 'rgba(17,24,39,0.06)' }}>
-                  <TableCell sx={{ width: 90, fontWeight: 900 }}>#</TableCell>
-                  <TableCell sx={{ fontWeight: 900 }}>Name</TableCell>
-                  <TableCell sx={{ fontWeight: 900 }}>Tx</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.map((r) => (
-                  <TableRow key={r.id} hover>
-                    <TableCell sx={{ fontWeight: 900 }}>{r.id}</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }}>{r.name}</TableCell>
-                    <TableCell
-                      sx={{
-                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
-                        opacity: 0.9,
-                        maxWidth: 340,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                      title={r.tx}
-                    >
-                      {r.tx}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {rows.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={3}><em>No entries yet. Catch your first Pokémon!</em></TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+	            <Table
+	              stickyHeader
+	              aria-label="Tuxedex table"
+	              sx={{ '& tbody tr:nth-of-type(odd)': { bgcolor: 'rgba(17,24,39,0.03)' } }}
+	            >
+	              <caption style={{ textAlign: 'left', fontWeight: 800, padding: '12px 16px' }}>Your Tuxedex</caption>
+	              <TableHead>
+	                <TableRow>
+	                  <TableCell sx={{ width: 90, fontWeight: 900, bgcolor: 'rgba(17,24,39,0.06)' }}>#</TableCell>
+	                  <TableCell sx={{ fontWeight: 900, bgcolor: 'rgba(17,24,39,0.06)' }}>Name</TableCell>
+	                  <TableCell sx={{ fontWeight: 900, bgcolor: 'rgba(17,24,39,0.06)' }}>Tx</TableCell>
+	                </TableRow>
+	              </TableHead>
+	              <TableBody>
+	                {rows.map((r) => (
+	                  <TableRow key={r.id} hover>
+	                    <TableCell sx={{ fontWeight: 900 }}>{r.id}</TableCell>
+	                    <TableCell sx={{ fontWeight: 800 }}>{r.name}</TableCell>
+	                    <TableCell
+	                      sx={{
+	                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
+	                        opacity: 0.9,
+	                        maxWidth: 340,
+	                        whiteSpace: 'nowrap',
+	                        overflow: 'hidden',
+	                        textOverflow: 'ellipsis',
+	                      }}
+	                      title={r.tx}
+	                    >
+	                      {r.tx}
+	                    </TableCell>
+	                  </TableRow>
+	                ))}
+	                {rows.length === 0 && (
+	                  <TableRow>
+	                    <TableCell colSpan={3}><em>No entries yet. Catch your first Tuxemon!</em></TableCell>
+	                  </TableRow>
+	                )}
+	              </TableBody>
+	            </Table>
           </TableContainer>
         </Paper>
       </Container>

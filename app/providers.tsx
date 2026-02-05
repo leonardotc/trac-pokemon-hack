@@ -5,10 +5,10 @@ import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
 const theme = createTheme({
   palette: {
     mode: "light",
-    primary: { main: "#E53935" }, // Pokédex red
-    secondary: { main: "#FFCB05" }, // Pokémon yellow
-    background: { default: "#B3E5FC", paper: "#FFFFFF" }, // sky-ish
-    text: { primary: "#111827" },
+    primary: { main: "#0F172A" },
+    secondary: { main: "#14B8A6" },
+    background: { default: "#ECFEFF", paper: "#FFFFFF" },
+    text: { primary: "#0F172A" },
   },
   shape: { borderRadius: 16 },
   typography: {
@@ -19,9 +19,9 @@ const theme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          backgroundColor: "#B3E5FC",
+          backgroundColor: "#ECFEFF",
           backgroundImage:
-            "radial-gradient(circle at 12px 12px, rgba(255,255,255,0.45) 0 2px, transparent 2px)",
+            "radial-gradient(circle at 12px 12px, rgba(15,23,42,0.08) 0 2px, transparent 2px)",
           backgroundSize: "24px 24px",
         },
       },

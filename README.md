@@ -1,4 +1,4 @@
-# Pokédex (Next.js)
+# Tuxedex (Next.js)
 
 This dapp talks to a `trac-peer` HTTP RPC (default `http://127.0.0.1:5001/v1`) and uses the TAP wallet browser extension for **account + signing**.
 
@@ -27,4 +27,4 @@ npm run dev
   - `GET /v1/contract/nonce`
   - `POST /v1/contract/tx/prepare`
   - `POST /v1/contract/tx` (`sim: true` then `sim: false`)
-- State (Pokédex): `GET /v1/state?key=app/pokedex/<pubKeyHex>&confirmed=false`
+- State (Dex collection): `GET /v1/state?key=app/tuxedex/<pubKeyHex>&confirmed=false` (legacy key from the current contract)

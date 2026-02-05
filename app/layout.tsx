@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'Pokedex',
-  description: 'Pokedex with Catch button and live state',
+  title: 'Tuxedex',
+  description: 'Tuxedex with Catch button and live state',
 };
 
 import './globals.css';
