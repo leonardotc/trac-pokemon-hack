@@ -22,7 +22,6 @@ import {
   IconButton,
   Snackbar,
 } from '@mui/material';
-import CatchingTuxomonIcon from '@mui/icons-material/CatchingTuxomon';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
@@ -654,7 +653,6 @@ export default function Page() {
               <Button
                 variant="contained"
                 color="secondary"
-                startIcon={<CatchingTuxomonIcon />}
                 onClick={handleCatch}
                 disabled={!walletPubKey || sending}
                 sx={{
