@@ -37,7 +37,7 @@ type TracNetworkProvider = {
   requestAccount: () => Promise<string>;
   getAddress: () => Promise<string>;
   getPublicKey: () => Promise<string>;
-  signTracTx: (txData: any) => Promise<string>;
+  signTracTx?: (txData:any) => Promise<any>;
   on?: (event: string, handler: (...args: any[]) => void) => void;
   removeListener?: (event: string, handler: (...args: any[]) => void) => void;
 };
@@ -109,29 +109,52 @@ function normalizeHexLower(hex: string | null | undefined): string | null {
   return normalized.toLowerCase();
 }
 
-function randomHex(bytes: number): string {
-  if (typeof crypto === 'undefined' || typeof crypto.getRandomValues !== 'function') {
-    // Fallback (should be rare): not cryptographically strong, but keeps the flow working.
-    const arr = Array.from({ length: bytes }, () => Math.floor(Math.random() * 256));
-    return arr.map((b) => b.toString(16).padStart(2, '0')).join('');
+function tryParseJson(text: string): any | null {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
   }
-  const buf = new Uint8Array(bytes);
-  crypto.getRandomValues(buf);
-  return Array.from(buf).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-function parseTracTxPayload(payload: string): any | null {
-  if (!payload || typeof payload !== 'string') return null;
+function tryDecodeBase64Json(b64: string): any | null {
   try {
-    const decoded = atob(payload);
-    return JSON.parse(decoded);
+    const decoded = atob(b64);
+    return tryParseJson(decoded);
   } catch {
-    try {
-      return JSON.parse(payload);
-    } catch {
-      return null;
-    }
+    return null;
   }
+}
+
+function tryDecodeJwtPayload(jwt: string): any | null {
+  if (typeof jwt !== 'string') return null;
+  const parts = jwt.split('.');
+  if (parts.length < 2) return null;
+  const payload = parts[1];
+  try {
+    const b64 = payload.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(payload.length / 4) * 4, '=');
+    const decoded = atob(b64);
+    return tryParseJson(decoded);
+  } catch {
+    return null;
+  }
+}
+
+function parseWalletResponse(res: any): { tx: string | null; signature: string | null } {
+  const directTx = normalizeHexLower(res?.tx);
+  const directSig = normalizeHexLower(res?.signature);
+  if (directTx || directSig) return { tx: directTx, signature: directSig };
+
+  const troTx = normalizeHexLower(res?.tro?.tx);
+  const troSig = normalizeHexLower(res?.tro?.is);
+  if (troTx || troSig) return { tx: troTx, signature: troSig };
+
+  if (typeof res === 'string') {
+    const asJson = tryParseJson(res) ?? tryDecodeBase64Json(res) ?? tryDecodeJwtPayload(res);
+    if (asJson) return parseWalletResponse(asJson);
+  }
+
+  return { tx: null, signature: null };
 }
 
 export default function Page() {
@@ -252,39 +275,35 @@ export default function Page() {
 
       const prepared_command: TracPeerPreparedCommand = { type: 'catch', value: {} };
 
+      const schema = await httpJson<any>('/api/contract/schema', { cache: 'no-store' });
+      const txTypes = schema?.contract?.txTypes;
+      if (Array.isArray(txTypes) && txTypes.includes('catch') === false) {
+        throw new Error('Connected peer contract does not support "catch".');
+      }
+
       const nonceRes = await httpJson<{ nonce: string }>('/api/contract/nonce', { cache: 'no-store' });
       const nonce = normalizeHexLower(nonceRes?.nonce);
       if (!nonce) throw new Error('Failed to get nonce from peer');
 
-      const prep = await httpJson<{ tx: string }>('/api/contract/tx/prepare', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prepared_command, address: walletPubKey, nonce }),
-      });
+      const contextRes = await httpJson<any>('/api/contract/tx/context', { cache: 'no-store' });
+      const context = contextRes?.msb;
+      if (!context || typeof context !== 'object') throw new Error('Failed to fetch tx context from peer');
 
-      const tx = normalizeHexLower(prep?.tx);
-      if (!tx) throw new Error('Failed to prepare tx');
-
-      // Wallet doesn't expose raw byte signing, but `tracSignTx` signs `txData.hash` (ed25519).
-      // We set `hash` to the contract tx hash and ask the wallet to sign a harmless 0 TNK self-transfer.
-      const txData = {
-        from: walletAddress,
-        to: walletAddress,
-        amount: '0',
-        validity: '0'.repeat(64),
-        nonce: randomHex(32),
-        hash: tx,
-        _bufferFields: ['hash', 'nonce'],
-      };
-
-      const txPayload = await provider.signTracTx(txData);
-      const parsed = parseTracTxPayload(txPayload);
-      const signedTx = normalizeHexLower(parsed?.tro?.tx);
-      const signature = normalizeHexLower(parsed?.tro?.is);
-      if (!signature) throw new Error('Wallet did not return a signature');
-      if (signedTx && signedTx !== tx) {
-        throw new Error('Wallet signed an unexpected tx hash');
+      const contractTx = {
+          prepared_command,
+          nonce,
+          context,
       }
+
+      if (typeof provider.signTracTx !== 'function') {
+        await navigator.clipboard.writeText(JSON.stringify(contractTx, null, 2));
+        throw new Error('Wallet does not support signTracTx yet. Signing payload copied to clipboard.');
+      }
+
+      const signedRaw = await provider.signTracTx(contractTx);
+      const { tx, signature } = parseWalletResponse(signedRaw);
+      if (!tx) throw new Error('Wallet did not return tx hash');
+      if (!signature) throw new Error('Wallet did not return a signature');
 
       await httpJson('/api/contract/tx', {
         method: 'POST',
@@ -679,8 +698,10 @@ export default function Page() {
             sx={{
               borderRadius: 3,
               borderColor: 'rgba(17,24,39,0.25)',
-              overflow: 'auto',
-              maxHeight: { xs: 420, sm: 520 },
+              overflowX: 'auto',
+              overflowY: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              maxHeight: { xs: '50vh', sm: 520 },
             }}
           >
 	            <Table
