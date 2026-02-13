@@ -706,8 +706,10 @@ export default function Page() {
             sx={{
               borderRadius: 3,
               borderColor: 'rgba(17,24,39,0.25)',
-              overflow: 'auto',
-              maxHeight: { xs: 420, sm: 520 },
+              overflowX: 'auto',
+              overflowY: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              maxHeight: { xs: '50vh', sm: 520 },
             }}
           >
 	            <Table
